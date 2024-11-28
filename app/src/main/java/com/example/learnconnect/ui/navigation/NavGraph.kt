@@ -36,6 +36,7 @@
             registerViewModel: RegisterViewModel,
             preferencesHelper: PreferencesHelper,
             pixabayViewModel: PixabayViewModel,
+            homeViewModel: HomeViewModel
         ) {
             // Token ve kullanıcı bilgileri
             val userToken by remember { mutableStateOf(preferencesHelper.getToken()) }
@@ -286,13 +287,17 @@
 
                         // Search Screen
                         composable("search") {
+                            val courses = homeViewModel.courses.collectAsState().value // Tüm kursları al
                             SearchScreen(
                                 currentScreen = "search",
+                                courses = courses, // Kursları parametre olarak ver
                                 onNavigate = { selectedScreen ->
                                     navController.navigate(selectedScreen)
-                                }
+                                },
+                                isDarkMode = isDarkModeState.value // Dark Mode durumunu gönder
                             )
                         }
+
                     }
                 }
             }

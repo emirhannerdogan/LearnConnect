@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.learnconnect.data.model.Course
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CourseDao {
@@ -23,4 +24,8 @@ interface CourseDao {
     // ID'ye göre kurs çağırma
     @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
     suspend fun getCourseById(courseId: Int): Course?
+
+    @Query("SELECT * FROM courses")
+    fun getAllCoursesFlow(): Flow<List<Course>>
+
 }

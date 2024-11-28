@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.runtime.collectAsState
@@ -77,6 +80,35 @@ fun HomeScreen(
     val backgroundColor = if (isDarkMode) Color.Black else Color.White
     val textColor = if (isDarkMode) Color.White else Color.Black
     Scaffold(
+
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Welcome, $email",
+                        color = textColor,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            // Search ekranına yönlendir
+                            onNavigate("search")
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search, // Varsayılan bir arama ikonu
+                            contentDescription = "Search",
+                            tint = textColor
+                        )
+                    }
+                },
+                backgroundColor = backgroundColor,
+                elevation = 4.dp
+            )
+        },
         bottomBar = {
             BottomBar(
                 currentScreen = currentScreen,
@@ -93,13 +125,6 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Welcome, $email",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp),
-                color = textColor
-            )
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -108,7 +133,7 @@ fun HomeScreen(
                 items(courses) { course ->
                     Card(
                         shape = RoundedCornerShape(8.dp),
-                        backgroundColor = Color.White,
+                        backgroundColor = if (isDarkMode) Color.DarkGray else Color.White,
                         elevation = 4.dp,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -118,17 +143,12 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(16.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Assessment, // Varsayılan bir ikon
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(
                                     text = course.name,
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = textColor
                                 )
                                 Text(
                                     text = course.description,
