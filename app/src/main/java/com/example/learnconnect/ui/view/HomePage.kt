@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,6 +54,8 @@ fun HomeScreenWrapper(
     homeViewModel: HomeViewModel
 ) {
     val courses by homeViewModel.courses.collectAsState()
+    val categories by homeViewModel.categories.collectAsState(initial = emptyList())
+
     val userEmail by remember {
         derivedStateOf {
             preferencesHelper.getUser()?.first.orEmpty()
@@ -65,7 +68,12 @@ fun HomeScreenWrapper(
         email = userEmail,
         onNavigate = onNavigate,
         isDarkMode = isDarkMode,
-        courses = courses
+        courses = courses,
+        categories = categories,
+        onCategorySelected = { selectedCategory ->
+            homeViewModel.filterCoursesByCategory(selectedCategory)
+        }
+
     )
 }
 @Composable
@@ -74,7 +82,9 @@ fun HomeScreen(
     email: String,
     isDarkMode: Boolean,
     onNavigate: (String) -> Unit,
-    courses: List<Course> // Veritabanından gelen kurs listesi
+    courses: List<Course>,
+    categories: List<String>,
+    onCategorySelected: (String?) -> Unit
 ) {
 
     val backgroundColor = if (isDarkMode) Color.Black else Color.White
@@ -125,6 +135,50 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        backgroundColor = if (isDarkMode) Color.DarkGray else Color.LightGray,
+                        elevation = 4.dp,
+                        modifier = Modifier
+                            .clickable { onCategorySelected(null) } // Tüm kursları göster
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "All",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = if (isDarkMode) Color.White else Color.Black
+                        )
+                    }
+                }
+                items(categories) { category ->
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        backgroundColor = if (isDarkMode) Color.DarkGray else Color.LightGray,
+                        elevation = 4.dp,
+                        modifier = Modifier
+                            .clickable { onCategorySelected(category) }
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = category,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = if (isDarkMode) Color.White else Color.Black
+                        )
+                    }
+                }
+
+            }
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),

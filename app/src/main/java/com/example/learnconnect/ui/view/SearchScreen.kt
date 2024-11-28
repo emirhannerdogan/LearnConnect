@@ -18,23 +18,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.learnconnect.data.model.Course
 import com.example.learnconnect.ui.components.BottomBar
+import com.example.learnconnect.ui.viewmodel.HomeViewModel
 
 @Composable
 fun SearchScreen(
     currentScreen: String,
     courses: List<Course>, // Tüm kursları parametre olarak alır
     onNavigate: (String) -> Unit,
-    isDarkMode: Boolean
+    isDarkMode: Boolean,
+    homeViewModel: HomeViewModel
 ) {
     // Arama çubuğu için state
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+    val searchResults by homeViewModel.searchResults.collectAsState()
 
-    // Arama sonucuna göre filtrelenmiş kurslar
-    val filteredCourses = remember(searchQuery) {
-        courses.filter { course ->
-            course.name.contains(searchQuery, ignoreCase = true) // Kurs ismine göre filtrele
-        }
+    LaunchedEffect(searchQuery) {
+        homeViewModel.searchCoursesByKeyword(searchQuery) // Anahtar kelime ile arama yap
     }
     LaunchedEffect(Unit) {
         focusRequester.requestFocus() // Klavyeyi açtırmak için odaklanma
@@ -82,7 +82,7 @@ fun SearchScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(filteredCourses) { course ->
+                items(searchResults) { course ->
                     Card(
                         shape = RoundedCornerShape(8.dp),
                         backgroundColor = if (isDarkMode) Color.DarkGray else Color.White,
@@ -117,3 +117,4 @@ fun SearchScreen(
         }
     }
 }
+

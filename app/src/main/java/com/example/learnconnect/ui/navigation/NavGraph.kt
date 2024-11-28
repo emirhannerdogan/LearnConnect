@@ -47,6 +47,11 @@
             println("Saved User: $savedUser") // Kayıtlı kullanıcıyı kontrol edin
             val isDarkModeState =
                 remember { mutableStateOf(preferencesHelper.getDarkModePreference()) }
+            val homeViewModel: HomeViewModel = viewModel(
+                factory = HomeViewModelFactory(
+                    courseDao = AppDatabase.getInstance(LocalContext.current).courseDao()
+                )
+            )
 
             AppTheme(isDarkMode = isDarkModeState.value) {
                 ThemeProvider(isDarkMode = isDarkModeState) {
@@ -311,7 +316,8 @@
                                 onNavigate = { selectedScreen ->
                                     navController.navigate(selectedScreen)
                                 },
-                                isDarkMode = isDarkModeState.value // Dark Mode durumunu gönder
+                                isDarkMode = isDarkModeState.value,
+                                homeViewModel = homeViewModel
                             )
                         }
 

@@ -21,11 +21,26 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE name = :courseName LIMIT 1")
     suspend fun getCourseByName(courseName: String): Course?
 
-    // ID'ye göre kurs çağırma
     @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
     suspend fun getCourseById(courseId: Int): Course?
 
     @Query("SELECT * FROM courses")
     fun getAllCoursesFlow(): Flow<List<Course>>
+
+    @Query("SELECT * FROM courses WHERE category LIKE :category")
+    suspend fun getCoursesByCategory(category: String): List<Course>
+
+    @Query("SELECT * FROM courses WHERE keywords LIKE '%' || :keyword || '%'")
+    suspend fun getCoursesByKeyword(keyword: String): List<Course>
+
+    @Query("""
+        SELECT * FROM courses 
+        WHERE category LIKE :category 
+        OR keywords LIKE '%' || :keyword || '%'
+    """)
+    suspend fun searchCourses(category: String, keyword: String): List<Course>
+
+    @Query("SELECT DISTINCT category FROM courses")
+    suspend fun getAllCategories(): List<String>
 
 }
