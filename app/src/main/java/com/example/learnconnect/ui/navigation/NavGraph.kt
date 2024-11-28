@@ -234,6 +234,33 @@
                                 )
                             }
                         }
+                        // Video Player Screen
+                        composable("video_player/{videoUrl}/{progress}/{courseId}/{videoIndex}") { backStackEntry ->
+                            val videoUrl =
+                                Uri.decode(backStackEntry.arguments?.getString("videoUrl")) ?: ""
+                            val progress =
+                                backStackEntry.arguments?.getString("progress")?.toIntOrNull()
+                                    ?: 0 // Güvenli dönüşüm
+                            val courseId =
+                                backStackEntry.arguments?.getString("courseId")?.toIntOrNull()
+                                    ?: -1 // Kurs ID
+                            val videoIndex =
+                                backStackEntry.arguments?.getString("videoIndex")?.toIntOrNull()
+                                    ?: -1 // Video sırası
+
+                            if (courseId == -1 || videoIndex == -1) {
+                                println("Error: Invalid courseId or videoIndex.")
+                                return@composable
+                            }
+
+                            VideoPlayerScreen(
+                                videoUrl = videoUrl,
+                                initialProgress = progress,
+                                courseId = courseId,
+                                videoIndex = videoIndex,
+                                onBack = { navController.navigateUp() } // Sadece onBack gerekli
+                            )
+                        }
 
                         // Profile Screen
                         composable("profile") {

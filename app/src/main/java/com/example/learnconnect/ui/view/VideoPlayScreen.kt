@@ -15,6 +15,10 @@ import com.google.android.exoplayer2.SimpleExoPlayer
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.exoplayer2.ui.PlayerView
@@ -37,18 +41,27 @@ fun VideoPlayerScreen(
     val context = LocalContext.current
     val videoProgressDao = AppDatabase.getInstance(context).videoProgressDao()
 
-    val isDarkMode = LocalThemeState.current // Tema durumunu al
+    val isDarkMode = LocalThemeState.current
     val backgroundColor = if (isDarkMode) Color.Black else Color.White
     val textColor = if (isDarkMode) Color.White else Color.Black
 
     val exoPlayer = remember {
         SimpleExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(Uri.parse(videoUrl)))
-            seekTo(initialProgress.toLong() * 1000) // Başlangıç ilerleme süresine git
+            seekTo(initialProgress.toLong() * 1000)
             prepare()
             playWhenReady = true
         }
     }
+
+    var playbackSpeed by remember { mutableFloatStateOf(1.0f) } // Varsayılan hız
+
+    DisposableEffect(exoPlayer) {
+        onDispose {
+            exoPlayer.release() // ExoPlayer kaynaklarını serbest bırak
+        }
+    }
+
     LaunchedEffect(exoPlayer) {
         while (true) {
             val progress = (exoPlayer.currentPosition / 1000).toLong()
@@ -89,12 +102,52 @@ fun VideoPlayerScreen(
             color = textColor
         )
 
+        // Video Player
         AndroidView(factory = {
             PlayerView(context).apply {
                 player = exoPlayer
             }
-        }, modifier = Modifier.fillMaxWidth())
+        }, modifier = Modifier.fillMaxWidth().height(300.dp))
+
+        // Hız Kontrol Butonları
+        Row(
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = {
+                playbackSpeed = 0.5f
+                exoPlayer.setPlaybackParameters(exoPlayer.playbackParameters.withSpeed(playbackSpeed))
+            }) {
+                Text("0.5x")
+            }
+            Button(onClick = {
+                playbackSpeed = 1.0f
+                exoPlayer.setPlaybackParameters(exoPlayer.playbackParameters.withSpeed(playbackSpeed))
+            }) {
+                Text("1x")
+            }
+            Button(onClick = {
+                playbackSpeed = 1.5f
+                exoPlayer.setPlaybackParameters(exoPlayer.playbackParameters.withSpeed(playbackSpeed))
+            }) {
+                Text("1.5x")
+            }
+            Button(onClick = {
+                playbackSpeed = 2.0f
+                exoPlayer.setPlaybackParameters(exoPlayer.playbackParameters.withSpeed(playbackSpeed))
+            }) {
+                Text("2x")
+            }
+        }
+
+        // Mevcut Hız Göstergesi
+        Text(
+            text = "Current Speed: ${playbackSpeed}x",
+            fontSize = 16.sp,
+            color = textColor,
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }
-
-
