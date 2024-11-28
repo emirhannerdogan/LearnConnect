@@ -73,7 +73,8 @@ fun SearchScreen(
                     cursorColor = textColor,
                     focusedBorderColor = textColor,
                     unfocusedBorderColor = textColor
-                )
+                ),
+                singleLine = true
             )
 
             // LazyColumn ile filtrelenmiş kursları gösterme

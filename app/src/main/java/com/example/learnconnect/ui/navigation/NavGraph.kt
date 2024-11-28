@@ -257,19 +257,35 @@
                             )
                         }
 
-
                         // Profile Screen
                         composable("profile") {
-                            val isDarkMode =
-                                preferencesHelper.getDarkModePreference() // Kullanıcı tercihi
+                            val userDao = AppDatabase.getInstance(context).userDao()
+                            val userCourseDao = AppDatabase.getInstance(context).userCourseDao()
+
+                            val registeredCourses = remember { mutableStateOf<List<Course>>(emptyList()) }
+
+                            // Kullanıcı e-postasını al
+                            val loggedInUserEmail = preferencesHelper.getUser()?.first.orEmpty()
+
+                            LaunchedEffect(loggedInUserEmail) {
+                                val user = userDao.getUserByEmail(loggedInUserEmail)
+                                val userId = user?.id ?: 0
+                                if (userId != 0) {
+                                    registeredCourses.value = userCourseDao.getCoursesForUser(userId)
+                                } else {
+                                    println("Kullanıcı bulunamadı veya ID geçersiz")
+                                }
+                            }
+
                             ProfileScreen(
                                 currentScreen = "profile",
-                                email = loggedInEmail,
+                                email = loggedInUserEmail,
+                                registeredCourses = registeredCourses.value, // Kursları gönder
                                 preferencesHelper = preferencesHelper,
-                                initialDarkMode = isDarkMode, // Başlangıç durumu
+                                initialDarkMode = isDarkModeState.value, // Dark Mode
                                 onToggleTheme = { newDarkMode ->
                                     isDarkModeState.value = newDarkMode
-                                    preferencesHelper.saveDarkModePreference(newDarkMode) // Yeni durumu kaydet
+                                    preferencesHelper.saveDarkModePreference(newDarkMode)
                                 },
                                 onNavigate = { selectedScreen ->
                                     if (selectedScreen == "logout") {
@@ -284,6 +300,7 @@
                                 }
                             )
                         }
+
 
                         // Search Screen
                         composable("search") {
