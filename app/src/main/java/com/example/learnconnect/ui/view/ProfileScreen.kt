@@ -26,6 +26,8 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,47 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.learnconnect.ui.viewmodel.ProfileViewModel
 import com.example.learnconnect.data.model.Course
 
-@Composable
-fun ProfileScreenWrapper(
-    email: String,
-    onNavigate: (String) -> Unit,
-    preferencesHelper: PreferencesHelper,
-    profileViewModel: ProfileViewModel,
-    currentScreen: String,
-    isDarkMode: Boolean,
-    onToggleTheme: (Boolean) -> Unit
-) {
-    val userEmail by remember {
-        derivedStateOf {
-            preferencesHelper.getUser()?.first.orEmpty()
-        }
-    }
-
-    val registeredCourses by profileViewModel.registeredCourses.collectAsState()
-
-    // Kullanıcıya ait kayıtlı kursları çek
-    LaunchedEffect(userEmail) {
-        if (userEmail.isNotEmpty()) {
-            profileViewModel.fetchRegisteredCourses(userEmail)
-        }
-    }
-
-    ProfileScreen(
-        email = userEmail,
-        onNavigate = onNavigate,
-        preferencesHelper = preferencesHelper,
-        currentScreen = currentScreen,
-        onToggleTheme = onToggleTheme,
-        registeredCourses = registeredCourses,
-        initialDarkMode = isDarkMode
-    )
-}
-
 
 @Composable
 fun ProfileScreen(
     email: String,
-    registeredCourses: List<Course>, // Kayıtlı kurslar
+    registeredCourses: List<Course>,
+    favoriteCourses: List<Course>,
     onNavigate: (String) -> Unit,
     preferencesHelper: PreferencesHelper,
     initialDarkMode: Boolean,
@@ -89,6 +56,9 @@ fun ProfileScreen(
     val backgroundColor = if (initialDarkMode) Color.Black else Color.White
     val textColor = if (initialDarkMode) Color.White else Color.Black
 
+    // Açılır/Kapanır durumları
+    var isRegisteredCoursesExpanded by remember { mutableStateOf(false) }
+    var isFavoriteCoursesExpanded by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -143,49 +113,124 @@ fun ProfileScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Başlık
-            Text(
-                text = "Kayıtlı Kurslar",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = textColor,
-                modifier = Modifier.padding(bottom = 8.dp)
+            // Kayıtlı Kurslar Başlığı
+            HeaderCard(
+                title = "Kayıtlı Kurslar",
+                isExpanded = !isRegisteredCoursesExpanded,
+                onClick = { isRegisteredCoursesExpanded = !isRegisteredCoursesExpanded },
+                textColor = textColor,
+                backgroundColor = backgroundColor
             )
 
-            // LazyColumn ile kursları listele
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(registeredCourses) { course ->
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        backgroundColor = if (initialDarkMode) Color.DarkGray else Color.White,
-                        elevation = 4.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigate("video_list/${course.name}") }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Column {
-                                Text(
-                                    text = course.name,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = textColor
-                                )
-                                Text(
-                                    text = course.description,
-                                    fontSize = 14.sp,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
+            // Kayıtlı Kurslar Listesi
+            if (!isRegisteredCoursesExpanded) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(registeredCourses) { course ->
+                        CourseCard(course = course, textColor = textColor, onNavigate = onNavigate)
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Favori Kurslar Başlığı
+            HeaderCard(
+                title = "Favori Kurslar",
+                isExpanded = isFavoriteCoursesExpanded,
+                onClick = { isFavoriteCoursesExpanded = !isFavoriteCoursesExpanded },
+                textColor = textColor,
+                backgroundColor = backgroundColor
+            )
+
+            // Favori Kurslar Listesi
+            if (isFavoriteCoursesExpanded) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(favoriteCourses) { course ->
+                        CourseCard(course = course, textColor = textColor, onNavigate = onNavigate)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HeaderCard(
+    title: String,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+    textColor: Color,
+    backgroundColor: Color
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        backgroundColor = if (isExpanded) backgroundColor else backgroundColor.copy(alpha = 0.9f),
+        elevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = textColor
+            )
+        }
+    }
+}
+
+// Kurs için kart tasarımı
+@Composable
+fun CourseCard(
+    course: Course,
+    textColor: Color,
+    onNavigate: (String) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        backgroundColor = MaterialTheme.colorScheme.surface,
+        elevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigate("video_list/${course.name}") }
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column {
+                Text(
+                    text = course.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = course.description,
+                    fontSize = 14.sp,
+                    color = textColor.copy(alpha = 0.7f)
+                )
             }
         }
     }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,9 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.learnconnect.data.AppDatabase
+import com.example.learnconnect.data.model.FavoriteCourse
 import com.example.learnconnect.ui.components.BottomBar
 import com.example.learnconnect.ui.theme.LocalThemeState
 import com.example.learnconnect.ui.viewmodel.PixabayViewModel
+import com.example.learnconnect.utils.PreferencesHelper
+import kotlinx.coroutines.launch
 
 @Composable
 fun VideoListScreen(
@@ -28,6 +33,7 @@ fun VideoListScreen(
     courseDescription: String,
     instructorName: String,
     pixabayViewModel: PixabayViewModel,
+    preferencesHelper: PreferencesHelper,
     isRegistered: Boolean,
     onRegisterCourse: () -> Unit,
     onNavigateToVideo: (String, Int) -> Unit, // `progress` bilgisi ile yönlendirme
@@ -41,17 +47,32 @@ fun VideoListScreen(
 
     val videos by pixabayViewModel.videos.collectAsState()
     val error by pixabayViewModel.error.collectAsState()
-    val limitedVideos = remember(videos) { videos.take(10) } // `videos` değiştiğinde yeniden hesaplanır.
     val loading by pixabayViewModel.loading.collectAsState()
 
-    // Videoların ilerleme durumunu saklamak için bir `Map`
     val videoProgress = remember { mutableStateMapOf<Int, Int>() } // [Index -> Progress]
 
     val context = LocalContext.current
 
     val videoProgressDao = AppDatabase.getInstance(context).videoProgressDao()
 
+    val favoriteCourseDao = AppDatabase.getInstance(context).favoriteCourseDao()
+    val userDao = AppDatabase.getInstance(context).userDao()
+    val courseDao = AppDatabase.getInstance(context).courseDao()
+
+    val userEmail = remember { preferencesHelper.getUser()?.first.orEmpty() }
+    val userId = remember { mutableStateOf(0) }
+    val isFavorited = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(isRegistered, videos) {
+        val user = userDao.getUserByEmail(userEmail)
+        userId.value = user?.id ?: 0
+
+        // Favori durumu kontrolü
+        val course = courseDao.getCourseByName(courseName)
+        if (course != null) {
+            isFavorited.value = favoriteCourseDao.isCourseFavorited(userId.value, course.id)
+        }
         if (isRegistered) {
             println("Pixabay'dan video aranıyor: $courseName")
             pixabayViewModel.setLoading(true)
@@ -93,6 +114,35 @@ fun VideoListScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val course = courseDao.getCourseByName(courseName)
+                                course?.let {
+                                    if (isFavorited.value) {
+                                        favoriteCourseDao.removeCourseFromFavorites(userId.value, it.id)
+                                        isFavorited.value = false
+                                    } else {
+                                        favoriteCourseDao.addCourseToFavorites(
+                                            FavoriteCourse(
+                                                userId = userId.value,
+                                                courseId = it.id
+                                            )
+                                        )
+                                        isFavorited.value = true
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorited.value) Icons.Filled.Favorite else Icons.Outlined.Favorite,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorited.value) Color.Red else textColor
+                        )
+                    }
+                }
             )
         },
         bottomBar = {

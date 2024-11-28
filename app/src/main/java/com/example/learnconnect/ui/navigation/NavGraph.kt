@@ -176,6 +176,7 @@
                                     instructorName = courseDetails.instructorName,
                                     pixabayViewModel = pixabayViewModel,
                                     isRegistered = isRegistered.value,
+                                    preferencesHelper = preferencesHelper,
                                     onRegisterCourse = {
                                         coroutineScope.launch {
                                             // Kullanıcı ve kurs ID'lerini alın
@@ -234,40 +235,14 @@
                             }
                         }
 
-                        // Video Player Screen
-                        composable("video_player/{videoUrl}/{progress}/{courseId}/{videoIndex}") { backStackEntry ->
-                            val videoUrl =
-                                Uri.decode(backStackEntry.arguments?.getString("videoUrl")) ?: ""
-                            val progress =
-                                backStackEntry.arguments?.getString("progress")?.toIntOrNull()
-                                    ?: 0 // Güvenli dönüşüm
-                            val courseId =
-                                backStackEntry.arguments?.getString("courseId")?.toIntOrNull()
-                                    ?: -1 // Kurs ID
-                            val videoIndex =
-                                backStackEntry.arguments?.getString("videoIndex")?.toIntOrNull()
-                                    ?: -1 // Video sırası
-
-                            if (courseId == -1 || videoIndex == -1) {
-                                println("Error: Invalid courseId or videoIndex.")
-                                return@composable
-                            }
-
-                            VideoPlayerScreen(
-                                videoUrl = videoUrl,
-                                initialProgress = progress,
-                                courseId = courseId,
-                                videoIndex = videoIndex,
-                                onBack = { navController.navigateUp() } // Sadece `onBack` gerekli
-                            )
-                        }
-
                         // Profile Screen
                         composable("profile") {
                             val userDao = AppDatabase.getInstance(context).userDao()
                             val userCourseDao = AppDatabase.getInstance(context).userCourseDao()
+                            val favoriteCourseDao = AppDatabase.getInstance(context).favoriteCourseDao() // Favori kurslar için DAO
 
                             val registeredCourses = remember { mutableStateOf<List<Course>>(emptyList()) }
+                            val favoriteCourses = remember { mutableStateOf<List<Course>>(emptyList()) } // Favori kurslar için liste
 
                             // Kullanıcı e-postasını al
                             val loggedInUserEmail = preferencesHelper.getUser()?.first.orEmpty()
@@ -276,7 +251,11 @@
                                 val user = userDao.getUserByEmail(loggedInUserEmail)
                                 val userId = user?.id ?: 0
                                 if (userId != 0) {
+                                    // Kayıtlı kursları al
                                     registeredCourses.value = userCourseDao.getCoursesForUser(userId)
+
+                                    // Favori kursları al
+                                    favoriteCourses.value = favoriteCourseDao.getFavoriteCoursesForUser(userId)
                                 } else {
                                     println("Kullanıcı bulunamadı veya ID geçersiz")
                                 }
@@ -285,7 +264,8 @@
                             ProfileScreen(
                                 currentScreen = "profile",
                                 email = loggedInUserEmail,
-                                registeredCourses = registeredCourses.value, // Kursları gönder
+                                registeredCourses = registeredCourses.value,
+                                favoriteCourses = favoriteCourses.value, // Favori kursları ekledik
                                 preferencesHelper = preferencesHelper,
                                 initialDarkMode = isDarkModeState.value, // Dark Mode
                                 onToggleTheme = { newDarkMode ->
@@ -305,6 +285,7 @@
                                 }
                             )
                         }
+
 
 
                         // Search Screen
